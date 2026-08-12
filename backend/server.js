@@ -19,11 +19,15 @@ const port = process.env.PORT;
 
 app.use(express.json());
 
-app.use(cors({
-    origin: "https://kdx-ten.vercel.app",
-    credentials: true,
-  }));
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://kdx-ten.vercel.app"
+];
 
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true
+}));
 app.use(cookieParser());
 
 
