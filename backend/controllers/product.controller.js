@@ -89,45 +89,70 @@ const createProduct = async (req, res) => {
    
 
 const getAllProducts = async (req, res) => {
-
     try {
+        const {
+            search,
+            category,
+            page = 1,
+            limit = 12
+        } = req.query;
 
-        const { search } = req.query;
+        const filter = {};
 
-        let filter = {};
-
+        // Search
         if (search) {
-
-            filter = {
-                name: {
-                    $regex: search,
-                    $options: "i"
-                }
+            filter.name = {
+                $regex: search,
+                $options: "i"
             };
-
         }
 
-        const products = await Product.find(filter)
-            .populate("category", "name")
-            .populate("owner", "username email");
+        // Category filter
+        if (category) {
+            if (!mongoose.Types.ObjectId.isValid(category)) {
+                return res.status(400).json({
+                    message: "Invalid category ID"
+                });
+            }
+
+            filter.category = category;
+        }
+
+        const pageNumber = Math.max(Number(page), 1);
+        const limitNumber = Math.min(Math.max(Number(limit), 1), 50);
+        const skip = (pageNumber - 1) * limitNumber;
+
+        const [products, totalProducts] = await Promise.all([
+            Product.find(filter)
+                .select("name description price stock category productImage")
+                .populate("category", "name")
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limitNumber)
+                .lean(),
+
+            Product.countDocuments(filter)
+        ]);
 
         return res.status(200).json({
             message: "Products fetched successfully",
-            products
+            products,
+            pagination: {
+                currentPage: pageNumber,
+                totalPages: Math.ceil(totalProducts / limitNumber),
+                totalProducts,
+                limit: limitNumber
+            }
         });
 
-    }
-
-    catch (error) {
+    } catch (error) {
+        console.error("Get Products Error:", error);
 
         return res.status(500).json({
-            message: error.message
+            message: "Failed to fetch products"
         });
-
     }
-
 };
-
 const getProductById = async(req,res)=>{
     try{
         const {id} =req.params;

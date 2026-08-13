@@ -15,7 +15,7 @@ function FeaturedProducts() {
 
             try{
 
-                const {data}=await api.get("/products");
+                const {data}=await api.get("/products?limit=8");
 
                 setProducts(data.products);
 

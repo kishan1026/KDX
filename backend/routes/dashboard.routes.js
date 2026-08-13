@@ -6,7 +6,7 @@ import { getDashboardStats } from "../controllers/dashboard.controller.js";
 const router = express.Router();
 
 router.get(
-    "/stats",
+    "/admin",
     verifyJWT,
     verifyAdmin,
     getDashboardStats

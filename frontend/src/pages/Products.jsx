@@ -12,6 +12,7 @@ function Products() {
 
   const [searchParams] = useSearchParams();
   const { fetchCart } = useCart();
+
   const categoryId = searchParams.get("category");
 
   useEffect(() => {
@@ -22,22 +23,24 @@ function Products() {
     try {
       setLoading(true);
 
-      const { data } = await api.get("/products");
+      // Build query parameters
+      const params = new URLSearchParams();
 
-      let fetchedProducts = data.products || [];
+      params.set("page", "1");
+      params.set("limit", "12");
 
-      // Filter products if a category is selected
       if (categoryId) {
-        fetchedProducts = fetchedProducts.filter(
-          (product) =>
-            product.category?._id === categoryId
-        );
+        params.set("category", categoryId);
       }
 
-      setProducts(fetchedProducts);
+      const { data } = await api.get(
+        `/products?${params.toString()}`
+      );
+
+      setProducts(data.products || []);
 
     } catch (error) {
-      console.log(error);
+      console.log("PRODUCT FETCH ERROR:", error);
 
       toast.error(
         error.response?.data?.message ||
@@ -55,15 +58,15 @@ function Products() {
         productId,
         quantity: 1,
       });
-  
-      // Update Navbar cart count immediately
+
+      // Update navbar cart count
       await fetchCart();
-  
+
       toast.success("Product added to cart");
-  
+
     } catch (error) {
-      console.log(error);
-  
+      console.log("CART ERROR:", error);
+
       toast.error(
         error.response?.data?.message ||
           "Failed to add product"
@@ -74,11 +77,9 @@ function Products() {
   if (loading) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
-
         <p className="text-gray-400 text-xl">
           Loading products...
         </p>
-
       </div>
     );
   }
@@ -87,15 +88,18 @@ function Products() {
     <div className="max-w-7xl mx-auto px-6 py-12">
 
       {/* Header */}
-
       <motion.div
-        initial={{ opacity: 0, y: -30 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{
+          opacity: 0,
+          y: -30,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
         className="flex justify-between items-center mb-12"
       >
-
         <div>
-
           <h1 className="text-5xl font-bold">
             Products
           </h1>
@@ -103,21 +107,16 @@ function Products() {
           <p className="text-gray-400 mt-3">
             Explore our latest products
           </p>
-
         </div>
-
       </motion.div>
 
       {/* Products */}
-
       {products.length === 0 ? (
 
         <div className="text-center py-20">
-
           <p className="text-gray-400 text-xl">
             No products found.
           </p>
-
         </div>
 
       ) : (
@@ -128,27 +127,32 @@ function Products() {
 
             <motion.div
               key={product._id}
+
               initial={{
                 opacity: 0,
-                y: 30
+                y: 30,
               }}
+
               animate={{
                 opacity: 1,
-                y: 0
+                y: 0,
               }}
+
               transition={{
-                delay: index * 0.05
+                delay: index * 0.05,
               }}
+
               whileHover={{
-                y: -6
+                y: -6,
               }}
+
               className="bg-[#111] border border-zinc-800 rounded-3xl overflow-hidden group"
             >
 
               {/* Image */}
-
-              <Link to={`/products/${product._id}`}>
-
+              <Link
+                to={`/products/${product._id}`}
+              >
                 <div className="h-64 bg-zinc-900 overflow-hidden">
 
                   <img
@@ -157,17 +161,18 @@ function Products() {
                       product.productImage
                     }
                     alt={product.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                   />
 
                 </div>
-
               </Link>
 
               {/* Content */}
-
               <div className="p-6">
 
+                {/* Name + Price */}
                 <div className="flex justify-between items-start gap-3">
 
                   <h2 className="text-xl font-semibold">
@@ -181,23 +186,18 @@ function Products() {
                 </div>
 
                 {/* Category */}
-
                 {product.category && (
-
                   <p className="text-sm text-yellow-400 mt-2">
                     {product.category.name}
                   </p>
-
                 )}
 
                 {/* Description */}
-
                 <p className="text-gray-400 text-sm mt-3 line-clamp-2">
                   {product.description}
                 </p>
 
                 {/* Stock */}
-
                 <p className="text-sm text-gray-500 mt-4">
                   {product.stock > 0
                     ? `${product.stock} in stock`
@@ -205,9 +205,9 @@ function Products() {
                 </p>
 
                 {/* Buttons */}
-
                 <div className="flex gap-3 mt-6">
 
+                  {/* View */}
                   <Link
                     to={`/products/${product._id}`}
                     className="flex-1 flex items-center justify-center gap-2 border border-zinc-700 hover:border-yellow-400 hover:text-yellow-400 py-3 rounded-xl transition"
@@ -216,6 +216,7 @@ function Products() {
                     View
                   </Link>
 
+                  {/* Add to Cart */}
                   <button
                     disabled={product.stock <= 0}
                     onClick={() =>
