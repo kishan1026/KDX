@@ -87,48 +87,32 @@ const createProduct = async (req, res) => {
     }
 };
    
-
 const getAllProducts = async (req, res) => {
     try {
-        const {
-            search,
-            category,
-            page = 1,
-            limit = 12
-        } = req.query;
+        const { search } = req.query;
+
+        const page = Math.max(Number(req.query.page) || 1, 1);
+        const limit = Math.min(Number(req.query.limit) || 12, 50);
+
+        const skip = (page - 1) * limit;
 
         const filter = {};
 
-        // Search
-        if (search) {
+        if (search?.trim()) {
             filter.name = {
-                $regex: search,
+                $regex: search.trim(),
                 $options: "i"
             };
         }
 
-        // Category filter
-        if (category) {
-            if (!mongoose.Types.ObjectId.isValid(category)) {
-                return res.status(400).json({
-                    message: "Invalid category ID"
-                });
-            }
-
-            filter.category = category;
-        }
-
-        const pageNumber = Math.max(Number(page), 1);
-        const limitNumber = Math.min(Math.max(Number(limit), 1), 50);
-        const skip = (pageNumber - 1) * limitNumber;
-
         const [products, totalProducts] = await Promise.all([
             Product.find(filter)
-                .select("name description price stock category productImage")
+                .select(
+                    "name description price stock productImage category"
+                )
                 .populate("category", "name")
-                .sort({ createdAt: -1 })
                 .skip(skip)
-                .limit(limitNumber)
+                .limit(limit)
                 .lean(),
 
             Product.countDocuments(filter)
@@ -138,10 +122,10 @@ const getAllProducts = async (req, res) => {
             message: "Products fetched successfully",
             products,
             pagination: {
-                currentPage: pageNumber,
-                totalPages: Math.ceil(totalProducts / limitNumber),
+                page,
+                limit,
                 totalProducts,
-                limit: limitNumber
+                totalPages: Math.ceil(totalProducts / limit)
             }
         });
 

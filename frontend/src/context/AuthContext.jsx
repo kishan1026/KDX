@@ -4,60 +4,57 @@ import api from "../services/api";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    const [user, setUser] = useState(null);
+  // Check logged-in user
+  const checkAuth = async () => {
+    try {
+      const { data } = await api.get("/users/current-user");
 
-    const [loading, setLoading] = useState(true);
+      setUser(data.user);
+    } catch (error) {
+      // 401 simply means user is not logged in
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    useEffect(() => {
+  // Login
+  const login = (userData) => {
+    setUser(userData);
+  };
 
-        checkAuth();
+  // Logout
+  const logout = async () => {
+    try {
+      await api.post("/users/logout");
+    } catch (error) {
+      console.log("Logout error:", error);
+    } finally {
+      setUser(null);
+    }
+  };
 
-    }, []);
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
-    const checkAuth = async () => {
-
-        try {
-
-            const { data } = await api.get("/users/current-user");
-
-            setUser(data.user);
-
-        }
-
-        catch {
-
-            setUser(null);
-
-        }
-
-        finally {
-
-            setLoading(false);
-
-        }
-
-    };
-
-    return (
-
-        <AuthContext.Provider
-
-            value={{
-                user,
-                setUser,
-                loading,
-                checkAuth
-            }}
-
-        >
-
-            {children}
-
-        </AuthContext.Provider>
-
-    );
-
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        setUser,
+        loading,
+        login,
+        logout,
+        checkAuth,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => useContext(AuthContext);
